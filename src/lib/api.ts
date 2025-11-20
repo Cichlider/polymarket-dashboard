@@ -12,7 +12,6 @@ function safeParse(data: any) {
   try {
     if (Array.isArray(data)) return data;
     if (typeof data === 'string') {
-      // 处理可能是 Python 风格的字符串列表 (如 "['Yes', 'No']")
       const cleaned = data.replace(/'/g, '"');
       return JSON.parse(cleaned);
     }
@@ -24,11 +23,16 @@ function safeParse(data: any) {
 
 export async function getTopMarkets() {
   try {
-    const res = await fetch('https://gamma-api.polymarket.com/events?limit=20&active=true&closed=false&order=volume24hr&ascending=false', { 
+    const res = await fetch('/api/markets', { 
       cache: 'no-store'
     });
     
-    if (!res.ok) throw new Error('Failed to fetch data');
+    if (!res.ok) {
+      // 获取详细的错误信息
+      const errorData = await res.json().catch(() => ({}));
+      console.error("Server responded with error:", res.status, errorData);
+      throw new Error(errorData.details || 'Failed to fetch data');
+    }
     
     const data = await res.json();
     
@@ -47,7 +51,7 @@ export async function getTopMarkets() {
       };
     }).filter(Boolean);
   } catch (error) {
-    console.error('Polymarket API Error:', error);
+    console.error('Client Fetch Error:', error);
     return [];
   }
 }
